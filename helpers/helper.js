@@ -18,11 +18,6 @@ export const userSignupSchema = Joi.object({
     password: Joi.string().min(6).required(),
 });
 
-export const userLoginSchema = Joi.object({
-    email: Joi.string().email().required(),
-    password: Joi.string().min(6).required(),
-});
-
 export const authenticateUser = async (data, next) => {
     try {
         const isMatch = await bcrypt.compare(data.password, data.dbPassword)
