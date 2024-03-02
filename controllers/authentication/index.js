@@ -35,40 +35,40 @@ const signup = async (req, res, next) => {
 
         res.status(201).send({ message: "An email sent to your account please verify" })
 
-        // const { accessToken, refreshToken } = generateTokens(data.email);
-
-        // res.status(200).json({
-        //     accessToken: `Bearer ${accessToken}`,
-        //     refreshToken: `Bearer ${refreshToken}`
-        // });
-
     } catch (error) {
         next(error)
     }
 };
 
-// const verifyLink = async (req, res, next) => {
-//     try {
-//         const user = await User.findOne({
-//             _id: req.params.id
-//         })
+const verifyLink = async (req, res, next) => {
+    try {
+        const user = await User.findOne({
+            _id: req.params.userId
+        }).select("_id email");
+        if (!user) return res.status(400).send({ message: "Invalid link" })
 
-//         if (!user) return res.status(400).send({ message: "Invalid link" })
+        const mailLink = await MailLink.findOne({
+            userId: user._id
+        }).select("-_id link");
 
-//         const mailLink = await MailLink.findOne({
-//             userId: user._id
-//         })
-//         if (!mailLink) return res.status(400).send({ message: "Invalid link" })
+        if (!mailLink) return res.status(400).send({ message: "Invalid link" })
 
-//         await User.updateOne(
-//             { _id: user._id, verified: true }
-//         )
-//         await mailLink.remove()
-//         res.status(200).send({message:"Email verified successfully"})
-//     } catch (e) {
-//         next(e)
-//     }
-// }
+        await User.updateOne(
+            { _id: user._id },
+            { verified: true }
+        );
+        await MailLink.deleteOne({ _id: mailLink._id });
+
+        const { accessToken, refreshToken } = generateTokens(user?.email, next);
+
+        res.status(200).json({
+            accessToken: `Bearer ${accessToken}`,
+            refreshToken: `Bearer ${refreshToken}`
+        });
+    } catch (e) {
+        next(e)
+    }
+}
 
 const login = async (req, res, next) => {
     try {
@@ -104,4 +104,8 @@ const login = async (req, res, next) => {
     }
 }
 
-export { login, signup }
+export {
+    login,
+    signup,
+    verifyLink
+}

@@ -1,10 +1,12 @@
 import express from "express";
-import { login, signup } from "../../controllers/authentication/index.js";
+import { login, signup, verifyLink } from "../../controllers/authentication/index.js";
 
 const authRoutes = express();
 
 authRoutes.post('/login', login);
 
 authRoutes.post('/signup', signup);
+
+authRoutes.post('/:userId/email-verification', verifyLink);
 
 export default authRoutes;

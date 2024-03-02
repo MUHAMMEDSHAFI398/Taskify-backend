@@ -31,18 +31,22 @@ export const authenticateUser = async (data, next) => {
     }
 }
 
-export const generateTokens = (email) => {
-    const refreshToken = jwt.sign(
-        { email },
-        process.env.REFRESH_TOKEN_SECRET,
-        { expiresIn: '30d' }
-    );
+export const generateTokens = (email, next) => {
+    try {
+        const refreshToken = jwt.sign(
+            { email },
+            process.env.REFRESH_TOKEN_SECRET,
+            { expiresIn: '30d' }
+        );
 
-    const accessToken = jwt.sign(
-        { email },
-        process.env.ACCESS_TOKEN_SECRET,
-        { expiresIn: 1200 }
-    );
+        const accessToken = jwt.sign(
+            { email },
+            process.env.ACCESS_TOKEN_SECRET,
+            { expiresIn: 1200 }
+        );
 
-    return { accessToken, refreshToken };
+        return { accessToken, refreshToken };
+    } catch (e) {
+        next(e)
+    }
 };

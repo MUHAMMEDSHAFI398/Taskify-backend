@@ -6,7 +6,7 @@ const mailVerificationSchema = new Schema(
     {
         userId: {
             type: mongoose.Schema.Types.ObjectId,
-            ref: 'Board',
+            ref: 'User',
             required: true,
             unique: true
         },
@@ -17,7 +17,7 @@ const mailVerificationSchema = new Schema(
         createdAt: {
             type: Date,
             default: Date.now(),
-            expires: 1800
+            expires: 3600
         }
     },
 );
