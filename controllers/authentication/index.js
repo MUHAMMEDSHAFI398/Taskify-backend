@@ -1,6 +1,7 @@
 import User from "../../model/users.js";
 import {
     authenticateUser,
+    compareLinks,
     generateTokens,
     hashPassword,
     userSignupSchema
@@ -33,6 +34,38 @@ const signup = async (req, res, next) => {
         const url = `${process.env.BASE_URL}/auth/${user.id}/verify/${link}`
         await sendEmail(user.email, "Verify Email", url, next)
 
+        res.status(201).send(
+            {
+                userId: user._id,
+                message: "An email sent to your account please verify"
+            }
+        )
+
+    } catch (error) {
+        next(error)
+    }
+};
+
+const resendEmail = async (req, res, next) => {
+
+    try {
+        const userId = req.params.userId;
+
+        const userData = await User.findOne(
+            { _id: userId }
+        ).select("email");
+
+        const link = crypto.randomBytes(32).toString("hex")
+        const hashLink = await hashPassword(link, next)
+
+        await MailLink.updateOne(
+            { userId: userId },
+            { link: hashLink }
+        )
+
+        const url = `${process.env.BASE_URL}/auth/${userId}/verify/${link}`
+        await sendEmail(userData.email, "Verify Email", url, next)
+
         res.status(201).send({ message: "An email sent to your account please verify" })
 
     } catch (error) {
@@ -40,31 +73,36 @@ const signup = async (req, res, next) => {
     }
 };
 
-const verifyLink = async (req, res, next) => {
+const verifyEmail = async (req, res, next) => {
     try {
+        const link = req.body.verificationLink
         const user = await User.findOne({
             _id: req.params.userId
         }).select("_id email");
+
         if (!user) return res.status(400).send({ message: "Invalid link" })
 
         const mailLink = await MailLink.findOne({
             userId: user._id
-        }).select("-_id link");
+        }).select("link");
 
         if (!mailLink) return res.status(400).send({ message: "Invalid link" })
 
-        await User.updateOne(
-            { _id: user._id },
-            { verified: true }
-        );
-        await MailLink.deleteOne({ _id: mailLink._id });
+        const emailVerified = await compareLinks(link, mailLink.link)
 
-        const { accessToken, refreshToken } = generateTokens(user?.email, next);
+        if (emailVerified) {
+            await User.updateOne(
+                { _id: user._id },
+                { verified: true }
+            );
+            await MailLink.deleteOne({ _id: mailLink._id });
 
-        res.status(200).json({
-            accessToken: `Bearer ${accessToken}`,
-            refreshToken: `Bearer ${refreshToken}`
-        });
+            const { accessToken, refreshToken } = generateTokens(user?.email, next);
+            res.status(200).json({
+                accessToken: `Bearer ${accessToken}`,
+                refreshToken: `Bearer ${refreshToken}`
+            });
+        }
     } catch (e) {
         next(e)
     }
@@ -107,5 +145,6 @@ const login = async (req, res, next) => {
 export {
     login,
     signup,
-    verifyLink
+    verifyEmail,
+    resendEmail
 }

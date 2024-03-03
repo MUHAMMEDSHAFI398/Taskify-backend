@@ -31,6 +31,19 @@ export const authenticateUser = async (data, next) => {
     }
 }
 
+export const compareLinks = async (link, dbLink, next) => {
+    try {
+        const isMatch = await bcrypt.compare(link, dbLink)
+        if (isMatch) {
+            return true
+        } else {
+            return false
+        }
+    } catch (e) {
+        next(e)
+    }
+}
+
 export const generateTokens = (email, next) => {
     try {
         const refreshToken = jwt.sign(
